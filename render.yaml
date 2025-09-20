@@ -1,0 +1,50 @@
+# Render.com deployment configuration for HealthSync Hospital Management System
+# Uses existing mediflow-database (free tier limitation)
+
+services:
+  # Monolithic Backend Service
+  - type: web
+    name: hospital-management-system
+    runtime: docker
+    plan: free
+    dockerfilePath: ./Dockerfile
+    healthCheckPath: /actuator/health
+    envVars:
+      - key: JAVA_TOOL_OPTIONS
+        value: -Xmx400m -XX:MaxRAMPercentage=75
+      - key: SPRING_PROFILES_ACTIVE
+        value: prod
+      - key: JWT_SECRET
+        generateValue: true
+      - key: JWT_EXPIRATION
+        value: 86400000
+      - key: SPRING_JPA_SHOW_SQL
+        value: "false"
+      - key: LOGGING_LEVEL_ROOT
+        value: INFO
+      - key: SPRING_JPA_HIBERNATE_DDL_AUTO
+        value: update
+      - key: DATABASE_URL
+        value: postgresql://mediflow_user:p9b7x3MCz3VJFZycM6AagAu4023WzX8Z@dpg-d2a7qjadbo4c73b2j4n0-a/mediflow
+
+  # React Frontend Service
+  - type: web
+    name: healthsync-portal
+    runtime: node
+    plan: free
+    buildCommand: cd member-portal && npm ci && npm run build
+    startCommand: cd member-portal && npm run serve
+    healthCheckPath: /
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: REACT_APP_API_BASE_URL
+        value: https://hospital-management-system-4s8g.onrender.com
+      - key: GENERATE_SOURCEMAP
+        value: "false"
+
+# Build settings optimized for Render free tier
+# - Uses existing mediflow-database (free tier limitation)
+# - Backend connects to shared PostgreSQL database
+# - Automatic deployment on git push
+# - Tables created with DDL auto-update to avoid conflicts
